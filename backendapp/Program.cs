@@ -40,7 +40,7 @@ builder.Services.AddIdentityServer()
     .AddInMemoryIdentityResources(Config.IdentityResources)
     .AddInMemoryApiScopes(Config.ApiScopes)
     .AddInMemoryClients(Config.Clients)
-    .AddDeveloperSigningCredential(); // Production'da gerçek bir sertifika kullanılmalı
+    .AddInMemorySigningCredential(); // Geçici bellek-tabanlı anahtar kullanır
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

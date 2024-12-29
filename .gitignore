@@ -92,4 +92,15 @@ _ReSharper*/
 .DS_Store
 ._.DS_Store
 **/.DS_Store
-**/._.DS_Store 
+**/._.DS_Store
+
+tempkey.jwk 
+
+# Hassas dosyalar
+*.jwk
+.env
+appsettings.Development.json
+
+# Build çıktıları
+bin/
+obj/ 
