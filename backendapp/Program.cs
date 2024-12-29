@@ -39,8 +39,7 @@ builder.Services.AddIdentityServer()
     .AddAspNetIdentity<ApplicationUser>()
     .AddInMemoryIdentityResources(Config.IdentityResources)
     .AddInMemoryApiScopes(Config.ApiScopes)
-    .AddInMemoryClients(Config.Clients)
-    .AddInMemorySigningCredential(); // Geçici bellek-tabanlı anahtar kullanır
+    .AddInMemoryClients(Config.Clients);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

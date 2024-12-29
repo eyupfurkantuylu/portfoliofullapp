@@ -1,0 +1,22 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace PortfolioFullApp.Core.DTOs.NavbarItem;
+
+public class UpdateNavbarItemDto
+{
+    [Required(ErrorMessage = "ID zorunludur")]
+    public string Id { get; set; }
+
+    [Required(ErrorMessage = "URL zorunludur")]
+    [Url(ErrorMessage = "Geçerli bir URL giriniz")]
+    public string Href { get; set; }
+
+    [Required(ErrorMessage = "İkon zorunludur")]
+    public string Icon { get; set; }
+
+    [Required(ErrorMessage = "Etiket zorunludur")]
+    public string Label { get; set; }
+
+    [Range(1, int.MaxValue, ErrorMessage = "Sıralama değeri 1'den büyük olmalıdır")]
+    public int Order { get; set; }
+}
