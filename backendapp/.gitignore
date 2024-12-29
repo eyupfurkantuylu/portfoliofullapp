@@ -86,4 +86,10 @@ _ReSharper*/
 !**/[Pp]ackages/build/
 # NuGet v3's project.json files produces more ignorable files
 *.nuget.props
-*.nuget.targets 
+*.nuget.targets
+
+# macOS sistem dosyaları
+.DS_Store
+._.DS_Store
+**/.DS_Store
+**/._.DS_Store 
