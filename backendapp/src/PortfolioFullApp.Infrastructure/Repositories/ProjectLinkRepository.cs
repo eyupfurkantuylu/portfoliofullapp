@@ -15,16 +15,27 @@ namespace PortfolioFullApp.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<IEnumerable<ProjectLinkDto>> GetAllByProjectIdAsync(string projectId)
+        public async Task<IEnumerable<ProjectLinkDto>> GetAllAsync()
+        {
+            using var connection = _context.CreateConnection();
+            const string sql = @"
+                SELECT * FROM ProjectLinks
+                ORDER BY [Order]";
+
+            var projectLinks = await connection.QueryAsync<ProjectLinkDto>(sql);
+            return projectLinks;
+        }
+
+        public async Task<IEnumerable<ProjectLinkDto>> GetByProjectIdAsync(string projectId)
         {
             using var connection = _context.CreateConnection();
             const string sql = @"
                 SELECT * FROM ProjectLinks 
-                WHERE ProjectId = @ProjectId 
+                WHERE ProjectId = @ProjectId
                 ORDER BY [Order]";
 
-            var links = await connection.QueryAsync<ProjectLinkDto>(sql, new { ProjectId = projectId });
-            return links;
+            var projectLinks = await connection.QueryAsync<ProjectLinkDto>(sql, new { ProjectId = projectId });
+            return projectLinks;
         }
 
         public async Task<ProjectLinkDto> GetByIdAsync(string id)
@@ -32,116 +43,46 @@ namespace PortfolioFullApp.Infrastructure.Repositories
             using var connection = _context.CreateConnection();
             const string sql = "SELECT * FROM ProjectLinks WHERE Id = @Id";
 
-            var link = await connection.QueryFirstOrDefaultAsync<ProjectLinkDto>(sql, new { Id = id });
-            return link;
+            var projectLink = await connection.QueryFirstOrDefaultAsync<ProjectLinkDto>(sql, new { Id = id });
+            return projectLink;
         }
 
-        public async Task<IEnumerable<ProjectLinkDto>> CreateManyAsync(string projectId, IEnumerable<ProjectLink> links)
-        {
-            using var connection = _context.CreateConnection();
-            using var transaction = connection.BeginTransaction();
-
-            try
-            {
-                var maxOrder = await GetMaxOrderAsync(projectId);
-                var currentOrder = maxOrder;
-
-                const string sql = @"
-                    INSERT INTO ProjectLinks (Id, Title, Url, Icon, [Order], ProjectId)
-                    VALUES (@Id, @Title, @Url, @Icon, @Order, @ProjectId)";
-
-                foreach (var link in links)
-                {
-                    currentOrder++;
-                    link.ProjectId = projectId;
-                    link.Order = currentOrder;
-                    await connection.ExecuteAsync(sql, link, transaction);
-                }
-
-                transaction.Commit();
-                return await GetAllByProjectIdAsync(projectId);
-            }
-            catch
-            {
-                transaction.Rollback();
-                throw;
-            }
-        }
-
-        public async Task<bool> DeleteByProjectIdAsync(string projectId)
-        {
-            using var connection = _context.CreateConnection();
-            const string sql = "DELETE FROM ProjectLinks WHERE ProjectId = @ProjectId";
-
-            var result = await connection.ExecuteAsync(sql, new { ProjectId = projectId });
-            return result > 0;
-        }
-
-        public async Task<bool> UpdateOrderAsync(string id, int newOrder)
-        {
-            using var connection = _context.CreateConnection();
-            using var transaction = connection.BeginTransaction();
-
-            try
-            {
-                var currentLink = await GetByIdAsync(id);
-                if (currentLink == null) return false;
-
-                if (newOrder > currentLink.Order)
-                {
-                    const string updateOthersSql = @"
-                        UPDATE ProjectLinks 
-                        SET [Order] = [Order] - 1 
-                        WHERE ProjectId = @ProjectId 
-                        AND [Order] > @CurrentOrder 
-                        AND [Order] <= @NewOrder";
-
-                    await connection.ExecuteAsync(updateOthersSql,
-                        new { ProjectId = currentLink.ProjectId, CurrentOrder = currentLink.Order, NewOrder = newOrder },
-                        transaction);
-                }
-                else if (newOrder < currentLink.Order)
-                {
-                    const string updateOthersSql = @"
-                        UPDATE ProjectLinks 
-                        SET [Order] = [Order] + 1 
-                        WHERE ProjectId = @ProjectId 
-                        AND [Order] >= @NewOrder 
-                        AND [Order] < @CurrentOrder";
-
-                    await connection.ExecuteAsync(updateOthersSql,
-                        new { ProjectId = currentLink.ProjectId, CurrentOrder = currentLink.Order, NewOrder = newOrder },
-                        transaction);
-                }
-
-                const string updateLinkSql = @"
-                    UPDATE ProjectLinks 
-                    SET [Order] = @NewOrder 
-                    WHERE Id = @Id";
-
-                await connection.ExecuteAsync(updateLinkSql,
-                    new { Id = id, NewOrder = newOrder },
-                    transaction);
-
-                transaction.Commit();
-                return true;
-            }
-            catch
-            {
-                transaction.Rollback();
-                throw;
-            }
-        }
-
-        public async Task<int> GetMaxOrderAsync(string projectId)
+        public async Task<ProjectLinkDto> CreateAsync(ProjectLink projectLink)
         {
             using var connection = _context.CreateConnection();
             const string sql = @"
-                SELECT ISNULL(MAX([Order]), 0) 
-                FROM ProjectLinks 
-                WHERE ProjectId = @ProjectId";
+                INSERT INTO ProjectLinks (Id, Type, Href, Icon, ProjectId, [Order])
+                VALUES (@Id, @Type, @Href, @Icon, @ProjectId, @Order);
+                SELECT * FROM ProjectLinks WHERE Id = @Id";
 
-            return await connection.ExecuteScalarAsync<int>(sql, new { ProjectId = projectId });
+            var createdProjectLink = await connection.QueryFirstOrDefaultAsync<ProjectLinkDto>(sql, projectLink);
+            return createdProjectLink;
+        }
+
+        public async Task<ProjectLinkDto> UpdateAsync(ProjectLink projectLink)
+        {
+            using var connection = _context.CreateConnection();
+            const string sql = @"
+                UPDATE ProjectLinks 
+                SET Type = @Type,
+                    Href = @Href,
+                    Icon = @Icon,
+                    ProjectId = @ProjectId,
+                    [Order] = @Order
+                WHERE Id = @Id;
+                SELECT * FROM ProjectLinks WHERE Id = @Id";
+
+            var updatedProjectLink = await connection.QueryFirstOrDefaultAsync<ProjectLinkDto>(sql, projectLink);
+            return updatedProjectLink;
+        }
+
+        public async Task<bool> DeleteAsync(string id)
+        {
+            using var connection = _context.CreateConnection();
+            const string sql = "DELETE FROM ProjectLinks WHERE Id = @Id";
+
+            var result = await connection.ExecuteAsync(sql, new { Id = id });
+            return result > 0;
         }
     }
 }

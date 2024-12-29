@@ -1,4 +1,5 @@
 using Dapper;
+using System.Text.Json;
 using PortfolioFullApp.Core.DTOs.Project;
 using PortfolioFullApp.Core.DTOs.ProjectLink;
 using PortfolioFullApp.Core.Entities;
@@ -16,14 +17,13 @@ namespace PortfolioFullApp.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<IEnumerable<ProjectDto>> GetAllByProfileIdAsync(string profileId)
+        public async Task<IEnumerable<ProjectDto>> GetAllAsync()
         {
             using var connection = _context.CreateConnection();
             const string sql = @"
-                SELECT p.*, l.*
+                SELECT p.*, pl.*
                 FROM Projects p
-                LEFT JOIN ProjectLinks l ON p.Id = l.ProjectId
-                WHERE p.ProfileId = @ProfileId
+                LEFT JOIN ProjectLinks pl ON p.Id = pl.ProjectId
                 ORDER BY p.[Order]";
 
             var projectDict = new Dictionary<string, ProjectDto>();
@@ -53,23 +53,18 @@ namespace PortfolioFullApp.Infrastructure.Repositories
 
                     if (link != null)
                     {
-                        var linkDto = new ProjectLinkDto
+                        projectDto.Links.Add(new ProjectLinkDto
                         {
                             Id = link.Id,
                             Type = link.Type,
                             Href = link.Href,
                             Icon = link.Icon,
                             Order = link.Order
-                        };
-                        if (!projectDto.Links.Any(l => l.Id == linkDto.Id))
-                        {
-                            projectDto.Links.Add(linkDto);
-                        }
+                        });
                     }
 
                     return projectDto;
                 },
-                new { ProfileId = profileId },
                 splitOn: "Id"
             );
 
@@ -80,9 +75,9 @@ namespace PortfolioFullApp.Infrastructure.Repositories
         {
             using var connection = _context.CreateConnection();
             const string sql = @"
-                SELECT p.*, l.*
+                SELECT p.*, pl.*
                 FROM Projects p
-                LEFT JOIN ProjectLinks l ON p.Id = l.ProjectId
+                LEFT JOIN ProjectLinks pl ON p.Id = pl.ProjectId
                 WHERE p.Id = @Id";
 
             var projectDict = new Dictionary<string, ProjectDto>();
@@ -112,18 +107,14 @@ namespace PortfolioFullApp.Infrastructure.Repositories
 
                     if (link != null)
                     {
-                        var linkDto = new ProjectLinkDto
+                        projectDto.Links.Add(new ProjectLinkDto
                         {
                             Id = link.Id,
                             Type = link.Type,
                             Href = link.Href,
                             Icon = link.Icon,
                             Order = link.Order
-                        };
-                        if (!projectDto.Links.Any(l => l.Id == linkDto.Id))
-                        {
-                            projectDto.Links.Add(linkDto);
-                        }
+                        });
                     }
 
                     return projectDto;
@@ -142,29 +133,30 @@ namespace PortfolioFullApp.Infrastructure.Repositories
 
             try
             {
-                // Önce maksimum sıra numarasını al
-                var maxOrder = await connection.ExecuteScalarAsync<int>(
-                    "SELECT ISNULL(MAX([Order]), 0) FROM Projects",
-                    transaction: transaction
-                );
-                project.Order = maxOrder + 1;
-
                 const string projectSql = @"
-                    INSERT INTO Projects (
-                        Id, Title, Href, Dates, Active,
-                        Description, Image, Video, [Order], Technologies
-                    ) VALUES (
-                        @Id, @Title, @Href, @Dates, @Active,
-                        @Description, @Image, @Video, @Order, @Technologies
-                    )";
+                    INSERT INTO Projects (Id, Title, Href, Dates, Active, Description, Technologies, Image, Video, [Order])
+                    VALUES (@Id, @Title, @Href, @Dates, @Active, @Description, @Technologies, @Image, @Video, @Order);";
 
-                await connection.ExecuteAsync(projectSql, project, transaction);
+                var technologiesJson = JsonSerializer.Serialize(project.Technologies);
+                await connection.ExecuteAsync(projectSql, new
+                {
+                    project.Id,
+                    project.Title,
+                    project.Href,
+                    project.Dates,
+                    project.Active,
+                    project.Description,
+                    Technologies = technologiesJson,
+                    project.Image,
+                    project.Video,
+                    project.Order
+                }, transaction);
 
-                if (project.Links?.Any() == true)
+                if (project.Links != null && project.Links.Any())
                 {
                     const string linkSql = @"
-                        INSERT INTO ProjectLinks (Id, Type, Href, Icon, [Order], ProjectId)
-                        VALUES (@Id, @Type, @Href, @Icon, @Order, @ProjectId)";
+                        INSERT INTO ProjectLinks (Id, Type, Href, Icon, ProjectId, [Order])
+                        VALUES (@Id, @Type, @Href, @Icon, @ProjectId, @Order)";
 
                     foreach (var link in project.Links)
                     {
@@ -197,22 +189,35 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                         Dates = @Dates,
                         Active = @Active,
                         Description = @Description,
+                        Technologies = @Technologies,
                         Image = @Image,
                         Video = @Video,
-                        Technologies = @Technologies
+                        [Order] = @Order
                     WHERE Id = @Id";
 
-                await connection.ExecuteAsync(updateProjectSql, project, transaction);
+                var technologiesJson = JsonSerializer.Serialize(project.Technologies);
+                await connection.ExecuteAsync(updateProjectSql, new
+                {
+                    project.Id,
+                    project.Title,
+                    project.Href,
+                    project.Dates,
+                    project.Active,
+                    project.Description,
+                    Technologies = technologiesJson,
+                    project.Image,
+                    project.Video,
+                    project.Order
+                }, transaction);
 
-                // Linkleri güncelle
                 const string deleteLinksSql = "DELETE FROM ProjectLinks WHERE ProjectId = @ProjectId";
                 await connection.ExecuteAsync(deleteLinksSql, new { ProjectId = project.Id }, transaction);
 
-                if (project.Links?.Any() == true)
+                if (project.Links != null && project.Links.Any())
                 {
                     const string linkSql = @"
-                        INSERT INTO ProjectLinks (Id, Type, Href, Icon, [Order], ProjectId)
-                        VALUES (@Id, @Type, @Href, @Icon, @Order, @ProjectId)";
+                        INSERT INTO ProjectLinks (Id, Type, Href, Icon, ProjectId, [Order])
+                        VALUES (@Id, @Type, @Href, @Icon, @ProjectId, @Order)";
 
                     foreach (var link in project.Links)
                     {
@@ -238,103 +243,20 @@ namespace PortfolioFullApp.Infrastructure.Repositories
 
             try
             {
-                // Önce silinecek projenin bilgilerini al
-                var project = await GetByIdAsync(id);
-                if (project == null) return false;
-
-                // İlişkili linkleri sil
                 const string deleteLinksSql = "DELETE FROM ProjectLinks WHERE ProjectId = @Id";
                 await connection.ExecuteAsync(deleteLinksSql, new { Id = id }, transaction);
 
-                // Projeyi sil
                 const string deleteProjectSql = "DELETE FROM Projects WHERE Id = @Id";
-                await connection.ExecuteAsync(deleteProjectSql, new { Id = id }, transaction);
-
-                // Sıralamayı güncelle
-                const string updateOrdersSql = @"
-                    UPDATE Projects 
-                    SET [Order] = [Order] - 1 
-                    WHERE [Order] > @Order";
-
-                await connection.ExecuteAsync(updateOrdersSql,
-                    new { Order = project.Order },
-                    transaction);
+                var result = await connection.ExecuteAsync(deleteProjectSql, new { Id = id }, transaction);
 
                 transaction.Commit();
-                return true;
+                return result > 0;
             }
             catch
             {
                 transaction.Rollback();
                 throw;
             }
-        }
-
-        public async Task<bool> UpdateOrderAsync(string id, int newOrder)
-        {
-            using var connection = _context.CreateConnection();
-            using var transaction = connection.BeginTransaction();
-
-            try
-            {
-                var project = await GetByIdAsync(id);
-                if (project == null) return false;
-
-                if (newOrder > project.Order)
-                {
-                    const string updateOthersSql = @"
-                        UPDATE Projects 
-                        SET [Order] = [Order] - 1 
-                        WHERE [Order] > @CurrentOrder 
-                        AND [Order] <= @NewOrder";
-
-                    await connection.ExecuteAsync(updateOthersSql,
-                        new { CurrentOrder = project.Order, NewOrder = newOrder },
-                        transaction);
-                }
-                else if (newOrder < project.Order)
-                {
-                    const string updateOthersSql = @"
-                        UPDATE Projects 
-                        SET [Order] = [Order] + 1 
-                        WHERE [Order] >= @NewOrder 
-                        AND [Order] < @CurrentOrder";
-
-                    await connection.ExecuteAsync(updateOthersSql,
-                        new { CurrentOrder = project.Order, NewOrder = newOrder },
-                        transaction);
-                }
-
-                const string updateProjectSql = @"
-                    UPDATE Projects 
-                    SET [Order] = @NewOrder 
-                    WHERE Id = @Id";
-
-                await connection.ExecuteAsync(updateProjectSql,
-                    new { Id = id, NewOrder = newOrder },
-                    transaction);
-
-                transaction.Commit();
-                return true;
-            }
-            catch
-            {
-                transaction.Rollback();
-                throw;
-            }
-        }
-
-
-        public async Task<bool> UpdateStatusAsync(string id, bool isActive)
-        {
-            using var connection = _context.CreateConnection();
-            const string sql = @"
-                UPDATE Projects 
-                SET IsActive = @IsActive
-                WHERE Id = @Id";
-
-            var result = await connection.ExecuteAsync(sql, new { Id = id, IsActive = isActive });
-            return result > 0;
         }
     }
 }

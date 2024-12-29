@@ -60,52 +60,6 @@ namespace PortfolioFullApp.Infrastructure.Repositories
             return contactDict.Values;
         }
 
-        public async Task<ContactDto> GetByProfileIdAsync(string profileId)
-        {
-            using var connection = _context.CreateConnection();
-            const string sql = @"
-                SELECT c.*, sm.* 
-                FROM Contacts c
-                LEFT JOIN SocialMedia sm ON c.Id = sm.ContactId
-                WHERE c.ProfileId = @ProfileId";
-
-            var contactDict = new Dictionary<string, ContactDto>();
-
-            await connection.QueryAsync<Contact, SocialMedia, ContactDto>(
-                sql,
-                (contact, social) =>
-                {
-                    if (!contactDict.TryGetValue(contact.Id, out var contactDto))
-                    {
-                        contactDto = new ContactDto
-                        {
-                            Id = contact.Id,
-                            Email = contact.Email,
-                            Tel = contact.Tel,
-                            Social = new List<SocialMediaDto>()
-                        };
-                        contactDict.Add(contact.Id, contactDto);
-                    }
-
-                    if (social != null)
-                    {
-                        contactDto.Social.Add(new SocialMediaDto
-                        {
-                            Id = social.Id,
-                            Name = social.Name,
-                            Url = social.Url
-                        });
-                    }
-
-                    return contactDto;
-                },
-                new { ProfileId = profileId },
-                splitOn: "Id"
-            );
-
-            return contactDict.Values.FirstOrDefault();
-        }
-
         public async Task<ContactDto> GetByIdAsync(string id)
         {
             using var connection = _context.CreateConnection();
@@ -160,8 +114,8 @@ namespace PortfolioFullApp.Infrastructure.Repositories
             try
             {
                 const string contactSql = @"
-                    INSERT INTO Contacts (Id, Email, Tel, ProfileId)
-                    VALUES (@Id, @Email, @Tel, @ProfileId);
+                    INSERT INTO Contacts (Id, Email, Tel)
+                    VALUES (@Id, @Email, @Tel);
                     SELECT SCOPE_IDENTITY();";
 
                 await connection.ExecuteAsync(contactSql, contact, transaction);
@@ -251,14 +205,6 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                 transaction.Rollback();
                 throw;
             }
-        }
-
-        public async Task<bool> ExistsAsync(string profileId)
-        {
-            using var connection = _context.CreateConnection();
-            const string sql = "SELECT COUNT(1) FROM Contacts WHERE ProfileId = @ProfileId";
-            var count = await connection.ExecuteScalarAsync<int>(sql, new { ProfileId = profileId });
-            return count > 0;
         }
     }
 }

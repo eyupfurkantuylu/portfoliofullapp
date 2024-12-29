@@ -5,7 +5,7 @@ namespace PortfolioFullApp.Core.Interfaces
 {
     public interface IEducationRepository
     {
-        Task<IEnumerable<EducationDto>> GetAllByProfileIdAsync(string profileId);
+        Task<IEnumerable<EducationDto>> GetAllAsync();
         Task<EducationDto> GetByIdAsync(string id);
         Task<EducationDto> CreateAsync(Education education);
         Task<EducationDto> UpdateAsync(Education education);

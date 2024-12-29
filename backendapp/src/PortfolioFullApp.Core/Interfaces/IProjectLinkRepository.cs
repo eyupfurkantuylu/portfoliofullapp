@@ -5,11 +5,11 @@ namespace PortfolioFullApp.Core.Interfaces
 {
     public interface IProjectLinkRepository
     {
-        Task<IEnumerable<ProjectLinkDto>> GetAllByProjectIdAsync(string projectId);
+        Task<IEnumerable<ProjectLinkDto>> GetAllAsync();
+        Task<IEnumerable<ProjectLinkDto>> GetByProjectIdAsync(string projectId);
         Task<ProjectLinkDto> GetByIdAsync(string id);
-        Task<IEnumerable<ProjectLinkDto>> CreateManyAsync(string projectId, IEnumerable<ProjectLink> links);
-        Task<bool> DeleteByProjectIdAsync(string projectId);
-        Task<bool> UpdateOrderAsync(string id, int newOrder);
-        Task<int> GetMaxOrderAsync(string projectId);
+        Task<ProjectLinkDto> CreateAsync(ProjectLink projectLink);
+        Task<ProjectLinkDto> UpdateAsync(ProjectLink projectLink);
+        Task<bool> DeleteAsync(string id);
     }
 }
