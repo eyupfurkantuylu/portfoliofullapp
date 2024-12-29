@@ -4,6 +4,8 @@ using PortfolioFullApp.Core.Identity;
 using PortfolioFullApp.Infrastructure.Data;
 using PortfolioFullApp.Infrastructure.Identity;
 using DotNetEnv;
+using PortfolioFullApp.Core.Interfaces;
+using PortfolioFullApp.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,6 +58,19 @@ builder.Services.AddCors(options =>
                .AllowCredentials();
     });
 });
+
+builder.Services.AddSingleton<DapperContext>();
+builder.Services.AddScoped<IContactRepository, ContactRepository>();
+builder.Services.AddScoped<IEducationRepository, EducationRepository>();
+builder.Services.AddScoped<IHackathonRepository, HackathonRepository>();
+builder.Services.AddScoped<IHackathonLinkRepository, HackathonLinkRepository>();
+builder.Services.AddScoped<INavbarItemRepository, NavbarItemRepository>();
+builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
+builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddScoped<IProjectLinkRepository, ProjectLinkRepository>();
+builder.Services.AddScoped<ISkillRepository, SkillRepository>();
+builder.Services.AddScoped<ISocialMediaRepository, SocialMediaRepository>();
+builder.Services.AddScoped<IWorkRepository, WorkRepository>();
 
 var app = builder.Build();
 
