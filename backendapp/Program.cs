@@ -47,30 +47,31 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS yapılandırması
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("DefaultPolicy", builder =>
-    {
-        builder.WithOrigins("http://localhost:3000")
-               .AllowAnyHeader()
-               .AllowAnyMethod()
-               .AllowCredentials();
-    });
-});
-
 builder.Services.AddSingleton<DapperContext>();
 builder.Services.AddScoped<IContactRepository, ContactRepository>();
 builder.Services.AddScoped<IEducationRepository, EducationRepository>();
 builder.Services.AddScoped<IHackathonRepository, HackathonRepository>();
 builder.Services.AddScoped<IHackathonLinkRepository, HackathonLinkRepository>();
-// builder.Services.AddScoped<INavbarItemRepository, NavbarItemRepository>();
-// builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
+builder.Services.AddScoped<INavbarItemRepository, NavbarItemRepository>();
+builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 builder.Services.AddScoped<IProjectLinkRepository, ProjectLinkRepository>();
-// builder.Services.AddScoped<ISkillRepository, SkillRepository>();
+builder.Services.AddScoped<ISkillRepository, SkillRepository>();
 builder.Services.AddScoped<ISocialMediaRepository, SocialMediaRepository>();
-// builder.Services.AddScoped<IWorkRepository, WorkRepository>();
+builder.Services.AddScoped<IWorkRepository, WorkRepository>();
+
+// CORS politikasını ekle
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DefaultPolicy",
+        builder =>
+        {
+            builder
+                .AllowAnyOrigin()     // Geliştirme aşamasında tüm originlere izin ver
+                .AllowAnyMethod()     // Tüm HTTP metodlarına izin ver
+                .AllowAnyHeader();    // Tüm headerlara izin ver
+        });
+});
 
 var app = builder.Build();
 
@@ -82,6 +83,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// CORS middleware'ini UseRouting'den önce ekle
 app.UseCors("DefaultPolicy");
 
 // Identity Server middleware'leri

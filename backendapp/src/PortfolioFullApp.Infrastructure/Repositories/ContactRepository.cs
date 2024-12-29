@@ -22,7 +22,7 @@ namespace PortfolioFullApp.Infrastructure.Repositories
             const string sql = @"
                 SELECT c.*, sm.* 
                 FROM Contacts c
-                LEFT JOIN SocialMedia sm ON c.Id = sm.ContactId";
+                LEFT JOIN SocialMedias sm ON c.Id = sm.ContactId";
 
             var contactDict = new Dictionary<string, ContactDto>();
 
