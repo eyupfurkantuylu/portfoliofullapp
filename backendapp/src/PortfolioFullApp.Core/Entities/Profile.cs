@@ -12,8 +12,5 @@ namespace PortfolioFullApp.Core.Entities
         public string Description { get; set; }
         public string Summary { get; set; }
         public string AvatarUrl { get; set; }
-        public List<Skill> Skills { get; set; }
-        public Contact Contact { get; set; }
-        public List<NavbarItem> Navbar { get; set; }
     }
 }

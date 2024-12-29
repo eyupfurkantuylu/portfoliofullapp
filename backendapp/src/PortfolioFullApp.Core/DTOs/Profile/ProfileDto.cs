@@ -15,7 +15,4 @@ public class ProfileDto : BaseDto
     public string Description { get; set; }
     public string Summary { get; set; }
     public string AvatarUrl { get; set; }
-    public List<SkillDto> Skills { get; set; }
-    public ContactDto Contact { get; set; }
-    public List<NavbarItemDto> Navbar { get; set; }
 }

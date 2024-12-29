@@ -55,20 +55,6 @@ namespace PortfolioFullApp.Infrastructure.Data
                     v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null));
 
             // İlişkileri güncelle - artık int yerine string Id kullanıyoruz
-            modelBuilder.Entity<Profile>()
-                .HasOne(p => p.Contact)
-                .WithOne(c => c.Profile)
-                .HasForeignKey<Contact>("ProfileId");
-
-            modelBuilder.Entity<Profile>()
-                .HasMany(p => p.Skills)
-                .WithOne(s => s.Profile)
-                .HasForeignKey("ProfileId");
-
-            modelBuilder.Entity<Profile>()
-                .HasMany(p => p.Navbar)
-                .WithOne(n => n.Profile)
-                .HasForeignKey("ProfileId");
 
             modelBuilder.Entity<Contact>()
                 .HasMany(c => c.Social)

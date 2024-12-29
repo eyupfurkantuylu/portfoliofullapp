@@ -1,5 +1,6 @@
 using Dapper;
 using PortfolioFullApp.Core.DTOs.Hackathon;
+using PortfolioFullApp.Core.DTOs.HackathonLink;
 using PortfolioFullApp.Core.Entities;
 using PortfolioFullApp.Core.Interfaces;
 using PortfolioFullApp.Infrastructure.Data;
@@ -15,99 +16,100 @@ namespace PortfolioFullApp.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<IEnumerable<HackathonDto>> GetAllByProfileIdAsync(string profileId)
+        public async Task<IEnumerable<HackathonDto>> GetAllAsync()
         {
             using var connection = _context.CreateConnection();
             const string sql = @"
-                SELECT h.*, t.* 
+                SELECT h.*, hl.* 
                 FROM Hackathons h
-                LEFT JOIN HackathonTeamMembers t ON h.Id = t.HackathonId
-                WHERE h.ProfileId = @ProfileId
-                ORDER BY h.Date DESC";
+                LEFT JOIN HackathonLinks hl ON h.Id = hl.HackathonId
+                ORDER BY h.[Order]";
 
             var hackathonDict = new Dictionary<string, HackathonDto>();
 
-            await connection.QueryAsync<Hackathon, HackathonTeamMember, HackathonDto>(
+            await connection.QueryAsync<Hackathon, HackathonLink, HackathonDto>(
                 sql,
-                (hackathon, teamMember) =>
+                (hackathon, link) =>
                 {
                     if (!hackathonDict.TryGetValue(hackathon.Id, out var hackathonDto))
                     {
                         hackathonDto = new HackathonDto
                         {
                             Id = hackathon.Id,
-                            Name = hackathon.Name,
+                            Title = hackathon.Title,
+                            Dates = hackathon.Dates,
+                            Location = hackathon.Location,
                             Description = hackathon.Description,
-                            Date = hackathon.Date,
-                            Place = hackathon.Place,
-                            Rank = hackathon.Rank,
-                            ProjectName = hackathon.ProjectName,
-                            ProjectDescription = hackathon.ProjectDescription,
-                            GithubUrl = hackathon.GithubUrl,
-                            TeamMembers = new List<HackathonTeamMemberDto>()
+                            Image = hackathon.Image,
+                            Mlh = hackathon.Mlh,
+                            Win = hackathon.Win,
+                            Order = hackathon.Order,
+                            Links = new List<HackathonLinkDto>()
                         };
                         hackathonDict.Add(hackathon.Id, hackathonDto);
                     }
 
-                    if (teamMember != null)
+                    if (link != null)
                     {
-                        hackathonDto.TeamMembers.Add(new HackathonTeamMemberDto
+                        hackathonDto.Links.Add(new HackathonLinkDto
                         {
-                            Id = teamMember.Id,
-                            Name = teamMember.Name,
-                            Role = teamMember.Role
+                            Id = link.Id,
+                            Title = link.Title,
+                            Icon = link.Icon,
+                            Href = link.Href,
+                            Order = link.Order
                         });
                     }
 
                     return hackathonDto;
                 },
-                new { ProfileId = profileId },
                 splitOn: "Id"
             );
 
             return hackathonDict.Values;
         }
-
         public async Task<HackathonDto> GetByIdAsync(string id)
         {
             using var connection = _context.CreateConnection();
             const string sql = @"
-                SELECT h.*, t.* 
+                SELECT h.*, hl.* 
                 FROM Hackathons h
-                LEFT JOIN HackathonTeamMembers t ON h.Id = t.HackathonId
+                LEFT JOIN HackathonLinks hl ON h.Id = hl.HackathonId
                 WHERE h.Id = @Id";
 
             var hackathonDict = new Dictionary<string, HackathonDto>();
 
-            await connection.QueryAsync<Hackathon, HackathonTeamMember, HackathonDto>(
+            await connection.QueryAsync<Hackathon, HackathonLink, HackathonDto>(
                 sql,
-                (hackathon, teamMember) =>
+                (hackathon, link) =>
                 {
                     if (!hackathonDict.TryGetValue(hackathon.Id, out var hackathonDto))
                     {
                         hackathonDto = new HackathonDto
                         {
                             Id = hackathon.Id,
-                            Name = hackathon.Name,
+                            Title = hackathon.Title,
+                            Dates = hackathon.Dates,
+                            Location = hackathon.Location,
                             Description = hackathon.Description,
-                            Date = hackathon.Date,
-                            Place = hackathon.Place,
-                            Rank = hackathon.Rank,
-                            ProjectName = hackathon.ProjectName,
-                            ProjectDescription = hackathon.ProjectDescription,
-                            GithubUrl = hackathon.GithubUrl,
-                            TeamMembers = new List<HackathonTeamMemberDto>()
+                            Image = hackathon.Image,
+                            Mlh = hackathon.Mlh,
+                            Win = hackathon.Win,
+                            Order = hackathon.Order,
+                            Links = new List<HackathonLinkDto>()
                         };
                         hackathonDict.Add(hackathon.Id, hackathonDto);
                     }
 
-                    if (teamMember != null)
+                    if (link != null)
                     {
-                        hackathonDto.TeamMembers.Add(new HackathonTeamMemberDto
+                        hackathonDto.Links.Add(new HackathonLinkDto
                         {
-                            Id = teamMember.Id,
-                            Name = teamMember.Name,
-                            Role = teamMember.Role
+                            Id = link.Id,
+                            Title = link.Title,
+                            Icon = link.Icon,
+                            Href = link.Href,
+                            Order = link.Order
                         });
                     }
 
@@ -127,27 +129,44 @@ namespace PortfolioFullApp.Infrastructure.Repositories
 
             try
             {
+                var maxOrder = await GetMaxOrderAsync();
+                hackathon.Order = maxOrder + 1;
+
                 const string hackathonSql = @"
                     INSERT INTO Hackathons (
-                        Id, Name, Description, Date, Place, Rank, 
-                        ProjectName, ProjectDescription, GithubUrl, ProfileId
+                        Id, Title, Dates, Location, Description,
+                        Image, Mlh, Win, [Order]
                     ) VALUES (
-                        @Id, @Name, @Description, @Date, @Place, @Rank,
-                        @ProjectName, @ProjectDescription, @GithubUrl, @ProfileId
+                        @Id, @Title, @Dates, @Location, @Description,
+                        @Image, @Mlh, @Win, @Order
                     )";
 
-                await connection.ExecuteAsync(hackathonSql, hackathon, transaction);
-
-                if (hackathon.TeamMembers != null && hackathon.TeamMembers.Any())
+                await connection.ExecuteAsync(hackathonSql, new
                 {
-                    const string teamMemberSql = @"
-                        INSERT INTO HackathonTeamMembers (Id, Name, Role, HackathonId)
-                        VALUES (@Id, @Name, @Role, @HackathonId)";
+                    hackathon.Id,
+                    hackathon.Title,
+                    hackathon.Dates,
+                    hackathon.Location,
+                    hackathon.Description,
+                    hackathon.Image,
+                    hackathon.Mlh,
+                    hackathon.Win,
+                    hackathon.Order
+                }, transaction);
 
-                    foreach (var member in hackathon.TeamMembers)
+                if (hackathon.Links?.Any() == true)
+                {
+                    var currentOrder = 0;
+                    const string linkSql = @"
+                        INSERT INTO HackathonLinks (Id, Title, Icon, Href, [Order], HackathonId)
+                        VALUES (@Id, @Title, @Icon, @Href, @Order, @HackathonId)";
+
+                    foreach (var link in hackathon.Links)
                     {
-                        member.HackathonId = hackathon.Id;
-                        await connection.ExecuteAsync(teamMemberSql, member, transaction);
+                        currentOrder++;
+                        link.HackathonId = hackathon.Id;
+                        link.Order = currentOrder;
+                        await connection.ExecuteAsync(linkSql, link, transaction);
                     }
                 }
 
@@ -170,31 +189,30 @@ namespace PortfolioFullApp.Infrastructure.Repositories
             {
                 const string updateHackathonSql = @"
                     UPDATE Hackathons 
-                    SET Name = @Name,
+                    SET Title = @Title,
+                        Dates = @Dates,
+                        Location = @Location,
                         Description = @Description,
-                        Date = @Date,
-                        Place = @Place,
-                        Rank = @Rank,
-                        ProjectName = @ProjectName,
-                        ProjectDescription = @ProjectDescription,
-                        GithubUrl = @GithubUrl
+                        Image = @Image,
+                        Mlh = @Mlh,
+                        Win = @Win
                     WHERE Id = @Id";
 
                 await connection.ExecuteAsync(updateHackathonSql, hackathon, transaction);
 
-                const string deleteTeamMembersSql = "DELETE FROM HackathonTeamMembers WHERE HackathonId = @HackathonId";
-                await connection.ExecuteAsync(deleteTeamMembersSql, new { HackathonId = hackathon.Id }, transaction);
+                const string deleteLinksSql = "DELETE FROM HackathonLinks WHERE HackathonId = @HackathonId";
+                await connection.ExecuteAsync(deleteLinksSql, new { HackathonId = hackathon.Id }, transaction);
 
-                if (hackathon.TeamMembers != null && hackathon.TeamMembers.Any())
+                if (hackathon.Links?.Any() == true)
                 {
-                    const string teamMemberSql = @"
-                        INSERT INTO HackathonTeamMembers (Id, Name, Role, HackathonId)
-                        VALUES (@Id, @Name, @Role, @HackathonId)";
+                    const string linkSql = @"
+                        INSERT INTO HackathonLinks (Id, Title, Icon, Href, [Order], HackathonId)
+                        VALUES (@Id, @Title, @Icon, @Href, @Order, @HackathonId)";
 
-                    foreach (var member in hackathon.TeamMembers)
+                    foreach (var link in hackathon.Links)
                     {
-                        member.HackathonId = hackathon.Id;
-                        await connection.ExecuteAsync(teamMemberSql, member, transaction);
+                        link.HackathonId = hackathon.Id;
+                        await connection.ExecuteAsync(linkSql, link, transaction);
                     }
                 }
 
@@ -215,20 +233,93 @@ namespace PortfolioFullApp.Infrastructure.Repositories
 
             try
             {
-                const string deleteTeamMembersSql = "DELETE FROM HackathonTeamMembers WHERE HackathonId = @Id";
-                await connection.ExecuteAsync(deleteTeamMembersSql, new { Id = id }, transaction);
+                var hackathon = await GetByIdAsync(id);
+                if (hackathon == null) return false;
+
+                const string deleteLinksSql = "DELETE FROM HackathonLinks WHERE HackathonId = @Id";
+                await connection.ExecuteAsync(deleteLinksSql, new { Id = id }, transaction);
 
                 const string deleteHackathonSql = "DELETE FROM Hackathons WHERE Id = @Id";
-                var result = await connection.ExecuteAsync(deleteHackathonSql, new { Id = id }, transaction);
+                await connection.ExecuteAsync(deleteHackathonSql, new { Id = id }, transaction);
+
+                const string updateOrdersSql = @"
+                    UPDATE Hackathons 
+                    SET [Order] = [Order] - 1 
+                    WHERE [Order] > @Order";
+
+                await connection.ExecuteAsync(updateOrdersSql,
+                    new { Order = hackathon.Order },
+                    transaction);
 
                 transaction.Commit();
-                return result > 0;
+                return true;
             }
             catch
             {
                 transaction.Rollback();
                 throw;
             }
+        }
+
+        public async Task<bool> UpdateOrderAsync(string id, int newOrder)
+        {
+            using var connection = _context.CreateConnection();
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                var hackathon = await GetByIdAsync(id);
+                if (hackathon == null) return false;
+
+                if (newOrder > hackathon.Order)
+                {
+                    const string updateOthersSql = @"
+                        UPDATE Hackathons 
+                        SET [Order] = [Order] - 1 
+                        WHERE [Order] > @CurrentOrder 
+                        AND [Order] <= @NewOrder";
+
+                    await connection.ExecuteAsync(updateOthersSql,
+                        new { CurrentOrder = hackathon.Order, NewOrder = newOrder },
+                        transaction);
+                }
+                else if (newOrder < hackathon.Order)
+                {
+                    const string updateOthersSql = @"
+                        UPDATE Hackathons 
+                        SET [Order] = [Order] + 1 
+                        WHERE [Order] >= @NewOrder 
+                        AND [Order] < @CurrentOrder";
+
+                    await connection.ExecuteAsync(updateOthersSql,
+                        new { CurrentOrder = hackathon.Order, NewOrder = newOrder },
+                        transaction);
+                }
+
+                const string updateHackathonSql = @"
+                    UPDATE Hackathons 
+                    SET [Order] = @NewOrder 
+                    WHERE Id = @Id";
+
+                await connection.ExecuteAsync(updateHackathonSql,
+                    new { Id = id, NewOrder = newOrder },
+                    transaction);
+
+                transaction.Commit();
+                return true;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        public async Task<int> GetMaxOrderAsync()
+        {
+            using var connection = _context.CreateConnection();
+            const string sql = "SELECT ISNULL(MAX([Order]), 0) FROM Hackathons";
+            return await connection.ExecuteScalarAsync<int>(sql);
         }
     }
 }

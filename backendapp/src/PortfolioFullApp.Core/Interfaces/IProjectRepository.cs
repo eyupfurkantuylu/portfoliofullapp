@@ -11,7 +11,6 @@ namespace PortfolioFullApp.Core.Interfaces
         Task<ProjectDto> UpdateAsync(Project project);
         Task<bool> DeleteAsync(string id);
         Task<bool> UpdateOrderAsync(string id, int newOrder);
-        Task<int> GetMaxOrderAsync(string profileId);
         Task<bool> UpdateStatusAsync(string id, bool isActive);
     }
 }

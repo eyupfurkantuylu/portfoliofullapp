@@ -64,13 +64,13 @@ builder.Services.AddScoped<IContactRepository, ContactRepository>();
 builder.Services.AddScoped<IEducationRepository, EducationRepository>();
 builder.Services.AddScoped<IHackathonRepository, HackathonRepository>();
 builder.Services.AddScoped<IHackathonLinkRepository, HackathonLinkRepository>();
-builder.Services.AddScoped<INavbarItemRepository, NavbarItemRepository>();
-builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
+// builder.Services.AddScoped<INavbarItemRepository, NavbarItemRepository>();
+// builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 builder.Services.AddScoped<IProjectLinkRepository, ProjectLinkRepository>();
-builder.Services.AddScoped<ISkillRepository, SkillRepository>();
+// builder.Services.AddScoped<ISkillRepository, SkillRepository>();
 builder.Services.AddScoped<ISocialMediaRepository, SocialMediaRepository>();
-builder.Services.AddScoped<IWorkRepository, WorkRepository>();
+// builder.Services.AddScoped<IWorkRepository, WorkRepository>();
 
 var app = builder.Build();
 

@@ -14,9 +14,6 @@ public class CreateNavbarItemDto
     [Required(ErrorMessage = "Etiket zorunludur")]
     public string Label { get; set; }
 
-    [Required(ErrorMessage = "Profil ID zorunludur")]
-    public string ProfileId { get; set; }
-
     [Range(1, int.MaxValue, ErrorMessage = "Sıralama değeri 1'den büyük olmalıdır")]
     public int Order { get; set; }
 }

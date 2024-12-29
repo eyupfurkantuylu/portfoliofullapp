@@ -1,5 +1,6 @@
 using Dapper;
 using PortfolioFullApp.Core.DTOs.Contact;
+using PortfolioFullApp.Core.DTOs.SocialMedia;
 using PortfolioFullApp.Core.Entities;
 using PortfolioFullApp.Core.Interfaces;
 using PortfolioFullApp.Infrastructure.Data;
@@ -36,7 +37,6 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                             Id = contact.Id,
                             Email = contact.Email,
                             Tel = contact.Tel,
-                            ProfileId = contact.ProfileId,
                             Social = new List<SocialMediaDto>()
                         };
                         contactDict.Add(contact.Id, contactDto);
@@ -47,7 +47,7 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                         contactDto.Social.Add(new SocialMediaDto
                         {
                             Id = social.Id,
-                            Platform = social.Platform,
+                            Name = social.Name,
                             Url = social.Url
                         });
                     }
@@ -82,7 +82,6 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                             Id = contact.Id,
                             Email = contact.Email,
                             Tel = contact.Tel,
-                            ProfileId = contact.ProfileId,
                             Social = new List<SocialMediaDto>()
                         };
                         contactDict.Add(contact.Id, contactDto);
@@ -93,7 +92,7 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                         contactDto.Social.Add(new SocialMediaDto
                         {
                             Id = social.Id,
-                            Platform = social.Platform,
+                            Name = social.Name,
                             Url = social.Url
                         });
                     }
@@ -129,7 +128,6 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                             Id = contact.Id,
                             Email = contact.Email,
                             Tel = contact.Tel,
-                            ProfileId = contact.ProfileId,
                             Social = new List<SocialMediaDto>()
                         };
                         contactDict.Add(contact.Id, contactDto);
@@ -140,7 +138,7 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                         contactDto.Social.Add(new SocialMediaDto
                         {
                             Id = social.Id,
-                            Platform = social.Platform,
+                            Name = social.Name,
                             Url = social.Url
                         });
                     }
@@ -171,8 +169,8 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                 if (contact.Social != null && contact.Social.Any())
                 {
                     const string socialSql = @"
-                        INSERT INTO SocialMedia (Id, Platform, Url, ContactId)
-                        VALUES (@Id, @Platform, @Url, @ContactId)";
+                        INSERT INTO SocialMedia (Id, Name, Url, ContactId)
+                        VALUES (@Id, @Name, @Url, @ContactId)";
 
                     foreach (var social in contact.Social)
                     {
@@ -212,8 +210,8 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                 if (contact.Social != null && contact.Social.Any())
                 {
                     const string socialSql = @"
-                        INSERT INTO SocialMedia (Id, Platform, Url, ContactId)
-                        VALUES (@Id, @Platform, @Url, @ContactId)";
+                        INSERT INTO SocialMedia (Id, Name, Url, ContactId)
+                        VALUES (@Id, @Name, @Url, @ContactId)";
 
                     foreach (var social in contact.Social)
                     {

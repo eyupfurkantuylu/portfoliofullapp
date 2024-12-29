@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 
 namespace PortfolioFullApp.Infrastructure.Data
 {
@@ -12,7 +13,8 @@ namespace PortfolioFullApp.Infrastructure.Data
         public DapperContext(IConfiguration configuration)
         {
             _configuration = configuration;
-            _connectionString = _configuration.GetConnectionString("DefaultConnection");
+            _connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
+                ?? throw new InvalidOperationException("DB_CONNECTION_STRING bulunamadı");
         }
 
         public IDbConnection CreateConnection()

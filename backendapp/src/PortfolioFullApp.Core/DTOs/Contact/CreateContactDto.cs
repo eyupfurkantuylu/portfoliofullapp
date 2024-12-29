@@ -10,7 +10,4 @@ public class CreateContactDto
 
     [Phone(ErrorMessage = "Geçerli bir telefon numarası giriniz")]
     public string Tel { get; set; }
-
-    [Required(ErrorMessage = "Profil ID zorunludur")]
-    public string ProfileId { get; set; }
 }
