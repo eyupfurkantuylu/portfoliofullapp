@@ -3,8 +3,15 @@ using Microsoft.EntityFrameworkCore;
 using PortfolioFullApp.Core.Identity;
 using PortfolioFullApp.Infrastructure.Data;
 using PortfolioFullApp.Infrastructure.Identity;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// .env dosyasını yükle
+Env.Load();
+
+// Connection string'i .env dosyasından al
+builder.Configuration["ConnectionStrings:DefaultConnection"] = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
 
 // Add services to the container.
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using PortfolioFullApp.Core.Entities;
 
 namespace PortfolioFullApp.Core.Identity
 {

@@ -98,7 +98,6 @@ namespace PortfolioFullApp.Infrastructure.Identity
                     
                     // Mobil için ek güvenlik ayarları
                     AllowPlainTextPkce = false,
-                    RequireRefreshClientSecret = false,
                     UpdateAccessTokenClaimsOnRefresh = true
                 }
             };
