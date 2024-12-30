@@ -53,14 +53,6 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                         @Id, @Platform, @Url, @Icon, @Order, @ContactId
                     )";
 
-                foreach (var socialMedia in socialMedias)
-                {
-                    currentOrder++;
-                    socialMedia.ContactId = contactId;
-                    socialMedia.Order = currentOrder;
-                    await connection.ExecuteAsync(sql, socialMedia, transaction);
-                }
-
                 transaction.Commit();
                 return await GetAllByContactIdAsync(contactId);
             }

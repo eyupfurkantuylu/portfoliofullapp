@@ -66,7 +66,7 @@ namespace PortfolioFullApp.Infrastructure.Repositories
             const string sql = @"
                 SELECT c.*, sm.* 
                 FROM Contacts c
-                LEFT JOIN SocialMedia sm ON c.Id = sm.ContactId
+                LEFT JOIN SocialMedias sm ON c.Id = sm.ContactId
                 WHERE c.Id = @Id";
 
             var contactDict = new Dictionary<string, ContactDto>();
@@ -106,41 +106,29 @@ namespace PortfolioFullApp.Infrastructure.Repositories
             return contactDict.Values.FirstOrDefault();
         }
 
-        public async Task<ContactDto> CreateAsync(Contact contact)
+        public async Task<ContactDto> CreateAsync(CreateContactDto createContactDto)
         {
-            using var connection = _context.CreateConnection();
-            using var transaction = connection.BeginTransaction();
-
-            try
-            {
-                const string contactSql = @"
-                    INSERT INTO Contacts (Id, Email, Tel)
-                    VALUES (@Id, @Email, @Tel);
+            var contactSql = @"
+                    INSERT INTO Contacts (Id, Email, Tel, CreatedAt)
+                    VALUES (NEWID(), @Email, @Tel, GETDATE());
                     SELECT SCOPE_IDENTITY();";
-
-                await connection.ExecuteAsync(contactSql, contact, transaction);
-
-                if (contact.Social != null && contact.Social.Any())
-                {
-                    const string socialSql = @"
-                        INSERT INTO SocialMedia (Id, Name, Url, ContactId)
-                        VALUES (@Id, @Name, @Url, @ContactId)";
-
-                    foreach (var social in contact.Social)
-                    {
-                        social.ContactId = contact.Id;
-                        await connection.ExecuteAsync(socialSql, social, transaction);
-                    }
-                }
-
-                transaction.Commit();
-                return await GetByIdAsync(contact.Id);
-            }
-            catch
+            var parameters = new
             {
-                transaction.Rollback();
-                throw;
-            }
+                Email = createContactDto.Email,
+                Tel = createContactDto.Tel
+            };
+            using (var connection = _context.CreateConnection())
+            {
+                try
+                {
+                    var contactId = await connection.ExecuteScalarAsync<string>(contactSql, parameters);
+                    return await GetByIdAsync(contactId!);
+                }
+                catch
+                {
+                    throw;
+                }
+            };
         }
 
         public async Task<ContactDto> UpdateAsync(Contact contact)
@@ -158,21 +146,10 @@ namespace PortfolioFullApp.Infrastructure.Repositories
 
                 await connection.ExecuteAsync(updateContactSql, contact, transaction);
 
-                const string deleteSocialSql = "DELETE FROM SocialMedia WHERE ContactId = @ContactId";
+                const string deleteSocialSql = "DELETE FROM SocialMedias WHERE ContactId = @ContactId";
                 await connection.ExecuteAsync(deleteSocialSql, new { ContactId = contact.Id }, transaction);
 
-                if (contact.Social != null && contact.Social.Any())
-                {
-                    const string socialSql = @"
-                        INSERT INTO SocialMedia (Id, Name, Url, ContactId)
-                        VALUES (@Id, @Name, @Url, @ContactId)";
-
-                    foreach (var social in contact.Social)
-                    {
-                        social.ContactId = contact.Id;
-                        await connection.ExecuteAsync(socialSql, social, transaction);
-                    }
-                }
+           
 
                 transaction.Commit();
                 return await GetByIdAsync(contact.Id);
@@ -191,7 +168,7 @@ namespace PortfolioFullApp.Infrastructure.Repositories
 
             try
             {
-                const string deleteSocialSql = "DELETE FROM SocialMedia WHERE ContactId = @Id";
+                const string deleteSocialSql = "DELETE FROM SocialMedias WHERE ContactId = @Id";
                 await connection.ExecuteAsync(deleteSocialSql, new { Id = id }, transaction);
 
                 const string deleteContactSql = "DELETE FROM Contacts WHERE Id = @Id";

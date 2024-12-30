@@ -56,11 +56,6 @@ namespace PortfolioFullApp.Infrastructure.Data
 
             // İlişkileri güncelle - artık int yerine string Id kullanıyoruz
 
-            modelBuilder.Entity<Contact>()
-                .HasMany(c => c.Social)
-                .WithOne(s => s.Contact)
-                .HasForeignKey("ContactId");
-
             modelBuilder.Entity<Project>()
                 .HasMany(p => p.Links)
                 .WithOne(l => l.Project)

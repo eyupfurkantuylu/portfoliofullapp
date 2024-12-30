@@ -75,7 +75,7 @@ namespace PortfolioFullApp.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<ApiResult<ContactDto>>> Create([FromBody] Contact contact)
+        public async Task<ActionResult<ApiResult<ContactDto>>> Create([FromBody] CreateContactDto createContactDto)
         {
             try
             {
@@ -84,9 +84,8 @@ namespace PortfolioFullApp.Api.Controllers
                     return BadRequest(ApiResult<ContactDto>.ErrorResult("Geçersiz model durumu",
                         ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList()));
                 }
-
-                contact.Id = Guid.NewGuid().ToString();
-                var createdContact = await _contactRepository.CreateAsync(contact);
+    
+                var createdContact = await _contactRepository.CreateAsync(createContactDto);
                 return CreatedAtAction(nameof(GetById),
                     new { id = createdContact.Id },
                     ApiResult<ContactDto>.SuccessResult(createdContact, "İletişim bilgisi başarıyla oluşturuldu"));

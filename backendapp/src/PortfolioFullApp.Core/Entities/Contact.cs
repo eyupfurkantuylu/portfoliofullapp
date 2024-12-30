@@ -6,6 +6,5 @@ namespace PortfolioFullApp.Core.Entities
     {
         public string Email { get; set; }
         public string Tel { get; set; }
-        public List<SocialMedia> Social { get; set; }
     }
 }
