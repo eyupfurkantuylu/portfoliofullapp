@@ -7,5 +7,4 @@ public class ContactDto : BaseDto
 {
     public string Email { get; set; }
     public string Tel { get; set; }
-    public List<SocialMediaDto> Social { get; set; }
 }

@@ -97,16 +97,12 @@ namespace PortfolioFullApp.Api.Controllers
             }
         }
 
-        [HttpPut("{id}")]
-        public async Task<ActionResult<ApiResult<ContactDto>>> Update(string id, [FromBody] Contact contact)
+        [HttpPut()]
+        public async Task<ActionResult<ApiResult<ContactDto>>> Update([FromBody] UpdateContactDto contact)
         {
             try
             {
-                if (id != contact.Id)
-                {
-                    return BadRequest(ApiResult<ContactDto>.ErrorResult("ID'ler eşleşmiyor"));
-                }
-
+               
                 if (!ModelState.IsValid)
                 {
                     return BadRequest(ApiResult<ContactDto>.ErrorResult("Geçersiz model durumu",

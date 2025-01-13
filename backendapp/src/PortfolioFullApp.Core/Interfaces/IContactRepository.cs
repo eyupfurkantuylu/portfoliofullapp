@@ -8,7 +8,7 @@ namespace PortfolioFullApp.Core.Interfaces
         Task<IEnumerable<ContactDto>> GetAllAsync();
         Task<ContactDto> GetByIdAsync(string id);
         Task<ContactDto> CreateAsync(CreateContactDto createContactDto);
-        Task<ContactDto> UpdateAsync(Contact contact);
+        Task<ContactDto> UpdateAsync(UpdateContactDto contact);
         Task<bool> DeleteAsync(string id);
     }
 }
