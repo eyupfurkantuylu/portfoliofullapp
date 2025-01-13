@@ -5,9 +5,10 @@ namespace PortfolioFullApp.Core.Interfaces
 {
     public interface IHackathonRepository
     {
+        Task<IEnumerable<HackathonDto>> GetAllAsync();
         Task<HackathonDto> GetByIdAsync(string id);
-        Task<HackathonDto> CreateAsync(Hackathon hackathon);
-        Task<HackathonDto> UpdateAsync(Hackathon hackathon);
+        Task<HackathonDto> CreateAsync(CreateHackathonDto hackathon);
+        Task<HackathonDto> UpdateAsync(UpdateHackathonDto hackathon);
         Task<bool> DeleteAsync(string id);
     }
 }
