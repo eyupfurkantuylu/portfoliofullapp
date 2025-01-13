@@ -37,7 +37,7 @@ namespace PortfolioFullApp.Infrastructure.Repositories
 
             var contact = await connection.QueryFirstOrDefaultAsync<ContactDto>(sql, new { Id = id });
 
-            return contact ?? throw new KeyNotFoundException($"Contact with ID {id} was not found.");
+            return contact ?? throw new KeyNotFoundException($"Contact with ID {id} waas not found.");
         }
 
 
@@ -76,12 +76,12 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                         Tel = @Tel,
                         UpdatedAt = GETDATE() 
                     WHERE Id = @Id";
-                
-                using(var connection = _context.CreateConnection())
+
+                using (var connection = _context.CreateConnection())
                 {
                     await connection.ExecuteAsync(updateContactSql, contact);
                 }
-                
+
                 return await GetByIdAsync(contact.Id);
             }
             catch
@@ -100,7 +100,7 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                     var result = await connection.ExecuteAsync(deleteContactSql, new { Id = id });
                     return result > 0;
                 }
-                
+
             }
             catch
             {
