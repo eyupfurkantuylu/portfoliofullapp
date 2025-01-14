@@ -8,8 +8,8 @@ namespace PortfolioFullApp.Core.Interfaces
         Task<IEnumerable<ProjectLinkDto>> GetAllAsync();
         Task<IEnumerable<ProjectLinkDto>> GetByProjectIdAsync(string projectId);
         Task<ProjectLinkDto> GetByIdAsync(string id);
-        Task<ProjectLinkDto> CreateAsync(ProjectLink projectLink);
-        Task<ProjectLinkDto> UpdateAsync(ProjectLink projectLink);
+        Task<ProjectLinkDto> CreateAsync(CreateProjectLinkDto projectLink);
+        Task<ProjectLinkDto> UpdateAsync(UpdateProjectLinkDto projectLink);
         Task<bool> DeleteAsync(string id);
     }
 }
