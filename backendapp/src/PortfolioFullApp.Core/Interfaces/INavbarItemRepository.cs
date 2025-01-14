@@ -7,8 +7,8 @@ namespace PortfolioFullApp.Core.Interfaces
     {
         Task<IEnumerable<NavbarItemDto>> GetAllAsync();
         Task<NavbarItemDto> GetByIdAsync(string id);
-        Task<NavbarItemDto> CreateAsync(NavbarItem navbarItem);
-        Task<NavbarItemDto> UpdateAsync(NavbarItem navbarItem);
+        Task<NavbarItemDto> CreateAsync(CreateNavbarItemDto navbarItem);
+        Task<NavbarItemDto> UpdateAsync(UpdateNavbarItemDto navbarItem);
         Task<bool> DeleteAsync(string id);
     }
 }
