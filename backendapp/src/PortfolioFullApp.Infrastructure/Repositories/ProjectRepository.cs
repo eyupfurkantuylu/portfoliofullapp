@@ -34,6 +34,11 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                 {
                     if (!projectDict.TryGetValue(project.Id, out var projectDto))
                     {
+                        var emptyList = new List<string>();
+                        var technologies = project.Technologies != null
+                            ? JsonSerializer.Deserialize<List<string>>(project.Technologies.ToString())
+                            : new List<string>();
+
                         projectDto = new ProjectDto
                         {
                             Id = project.Id,
@@ -42,7 +47,7 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                             Dates = project.Dates,
                             Active = project.Active,
                             Description = project.Description,
-                            Technologies = project.Technologies,
+                            Technologies = technologies,
                             Links = new List<ProjectLinkDto>(),
                             Image = project.Image,
                             Video = project.Video,
@@ -88,6 +93,10 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                 {
                     if (!projectDict.TryGetValue(project.Id, out var projectDto))
                     {
+                        var technologies = project.Technologies != null
+                          ? JsonSerializer.Deserialize<List<string>>(project.Technologies.ToString())
+                          : new List<string>();
+
                         projectDto = new ProjectDto
                         {
                             Id = project.Id,
@@ -96,7 +105,7 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                             Dates = project.Dates,
                             Active = project.Active,
                             Description = project.Description,
-                            Technologies = project.Technologies,
+                            Technologies = technologies,
                             Links = new List<ProjectLinkDto>(),
                             Image = project.Image,
                             Video = project.Video,
@@ -123,139 +132,93 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                 splitOn: "Id"
             );
 
-            return projectDict.Values.FirstOrDefault();
+            return projectDict.Values.FirstOrDefault() ?? throw new Exception("Proje bulunamadı");
         }
 
-        public async Task<ProjectDto> CreateAsync(Project project)
+        public async Task<ProjectDto> CreateAsync(CreateProjectDto project)
         {
-            using var connection = _context.CreateConnection();
-            using var transaction = connection.BeginTransaction();
-
-            try
+            using (var connection = _context.CreateConnection())
             {
-                const string projectSql = @"
-                    INSERT INTO Projects (Id, Title, Href, Dates, Active, Description, Technologies, Image, Video, [Order])
-                    VALUES (@Id, @Title, @Href, @Dates, @Active, @Description, @Technologies, @Image, @Video, @Order);";
-
-                var technologiesJson = JsonSerializer.Serialize(project.Technologies);
-                await connection.ExecuteAsync(projectSql, new
+                try
                 {
-                    project.Id,
-                    project.Title,
-                    project.Href,
-                    project.Dates,
-                    project.Active,
-                    project.Description,
-                    Technologies = technologiesJson,
-                    project.Image,
-                    project.Video,
-                    project.Order
-                }, transaction);
+                    var technologiesJson = JsonSerializer.Serialize(project.Technologies.ToArray());
 
-                if (project.Links != null && project.Links.Any())
-                {
-                    const string linkSql = @"
-                        INSERT INTO ProjectLinks (Id, Type, Href, Icon, ProjectId, [Order])
-                        VALUES (@Id, @Type, @Href, @Icon, @ProjectId, @Order)";
+                    const string projectSql = @"
+                    INSERT INTO Projects (Id, Title, Href, Dates, Active, Description, Technologies, Image, Video, [Order], CreatedAt)
+                    OUTPUT INSERTED.Id 
+                    VALUES (NEWID(), @Title, @Href, @Dates, @Active, @Description, @TechnologiesJson, @Image, @Video, @Order, GETDATE())";
 
-                    foreach (var link in project.Links)
+                    var parameters = new
                     {
-                        link.ProjectId = project.Id;
-                        await connection.ExecuteAsync(linkSql, link, transaction);
-                    }
-                }
+                        project.Title,
+                        project.Href,
+                        project.Dates,
+                        project.Active,
+                        project.Description,
+                        TechnologiesJson = technologiesJson,
+                        project.Image,
+                        project.Video,
+                        project.Order
+                    };
 
-                transaction.Commit();
-                return await GetByIdAsync(project.Id);
-            }
-            catch
-            {
-                transaction.Rollback();
-                throw;
+                    var createdProject = await connection.ExecuteScalarAsync<string>(projectSql, parameters);
+                    return await GetByIdAsync(createdProject!);
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"Proje oluşturulurken bir hata oluştu: {ex.Message}", ex);
+                }
             }
         }
 
-        public async Task<ProjectDto> UpdateAsync(Project project)
+        public async Task<ProjectDto> UpdateAsync(UpdateProjectDto project)
         {
-            using var connection = _context.CreateConnection();
-            using var transaction = connection.BeginTransaction();
-
-            try
+            using (var connection = _context.CreateConnection())
             {
-                const string updateProjectSql = @"
+                try
+                {
+                    const string updateProjectSql = @"
                     UPDATE Projects 
                     SET Title = @Title,
                         Href = @Href,
                         Dates = @Dates,
                         Active = @Active,
-                        Description = @Description,
+                            Description = @Description,
                         Technologies = @Technologies,
                         Image = @Image,
                         Video = @Video,
-                        [Order] = @Order
+                        [Order] = @Order,
+                        UpdatedAt = GETDATE()
                     WHERE Id = @Id";
 
-                var technologiesJson = JsonSerializer.Serialize(project.Technologies);
-                await connection.ExecuteAsync(updateProjectSql, new
-                {
-                    project.Id,
-                    project.Title,
-                    project.Href,
-                    project.Dates,
-                    project.Active,
-                    project.Description,
-                    Technologies = technologiesJson,
-                    project.Image,
-                    project.Video,
-                    project.Order
-                }, transaction);
-
-                const string deleteLinksSql = "DELETE FROM ProjectLinks WHERE ProjectId = @ProjectId";
-                await connection.ExecuteAsync(deleteLinksSql, new { ProjectId = project.Id }, transaction);
-
-                if (project.Links != null && project.Links.Any())
-                {
-                    const string linkSql = @"
-                        INSERT INTO ProjectLinks (Id, Type, Href, Icon, ProjectId, [Order])
-                        VALUES (@Id, @Type, @Href, @Icon, @ProjectId, @Order)";
-
-                    foreach (var link in project.Links)
-                    {
-                        link.ProjectId = project.Id;
-                        await connection.ExecuteAsync(linkSql, link, transaction);
-                    }
+                    await connection.ExecuteAsync(updateProjectSql, project);
+                    return await GetByIdAsync(project.Id);
                 }
-
-                transaction.Commit();
-                return await GetByIdAsync(project.Id);
-            }
-            catch
-            {
-                transaction.Rollback();
-                throw;
+                catch (Exception ex)
+                {
+                    throw new Exception("Proje güncellenirken bir hata oluştu", ex);
+                }
             }
         }
 
         public async Task<bool> DeleteAsync(string id)
         {
-            using var connection = _context.CreateConnection();
-            using var transaction = connection.BeginTransaction();
-
-            try
+            using (var connection = _context.CreateConnection())
             {
-                const string deleteLinksSql = "DELETE FROM ProjectLinks WHERE ProjectId = @Id";
-                await connection.ExecuteAsync(deleteLinksSql, new { Id = id }, transaction);
+                try
+                {
+                    const string deleteLinksSql = "DELETE FROM ProjectLinks WHERE ProjectId = @Id";
 
-                const string deleteProjectSql = "DELETE FROM Projects WHERE Id = @Id";
-                var result = await connection.ExecuteAsync(deleteProjectSql, new { Id = id }, transaction);
+                    await connection.ExecuteAsync(deleteLinksSql, new { Id = id });
 
-                transaction.Commit();
-                return result > 0;
-            }
-            catch
-            {
-                transaction.Rollback();
-                throw;
+                    const string deleteProjectSql = "DELETE FROM Projects WHERE Id = @Id";
+                    var result = await connection.ExecuteAsync(deleteProjectSql, new { Id = id });
+                    return result > 0;
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception("Proje silinirken bir hata oluştu", ex);
+                }
             }
         }
     }
