@@ -79,9 +79,7 @@ namespace backendapp.src.PortfolioFullApp.API.Controllers
                 }
 
                 var createdProject = await _projectRepository.CreateAsync(project);
-                return CreatedAtAction(nameof(GetByIdAsync),
-                    new { id = createdProject.Id },
-                    ApiResult<ProjectDto>.SuccessResult(createdProject, "Proje başarıyla oluşturuldu"));
+                return Ok(ApiResult<ProjectDto>.SuccessResult(createdProject, "Proje başarıyla oluşturuldu"));
             }
             catch (Exception ex)
             {

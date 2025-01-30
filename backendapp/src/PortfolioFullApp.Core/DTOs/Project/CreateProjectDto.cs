@@ -20,8 +20,8 @@ public class CreateProjectDto
     [Required(ErrorMessage = "Açıklama zorunludur")]
     public string Description { get; set; }
 
-    [Required(ErrorMessage = "Teknolojiler listesi zorunludur")]
-    public List<string> Technologies { get; set; }
+    [Required(ErrorMessage = "Teknolojiler zorunludur")]
+    public string Technologies { get; set; }
 
     [Url(ErrorMessage = "Geçerli bir resim URL'i giriniz")]
     public string Image { get; set; }

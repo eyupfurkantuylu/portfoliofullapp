@@ -21,7 +21,9 @@ namespace PortfolioFullApp.Infrastructure.Repositories
         {
             using var connection = _context.CreateConnection();
             const string sql = @"
-                SELECT p.*, pl.*
+                SELECT p.Id, p.Title, p.Href, p.Dates, p.Active, p.Description, 
+                       CAST(p.Technologies as nvarchar(max)) as Technologies,
+                       p.Image, p.Video, p.[Order], pl.*
                 FROM Projects p
                 LEFT JOIN ProjectLinks pl ON p.Id = pl.ProjectId
                 ORDER BY p.[Order]";
@@ -34,11 +36,6 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                 {
                     if (!projectDict.TryGetValue(project.Id, out var projectDto))
                     {
-                        var emptyList = new List<string>();
-                        var technologies = project.Technologies != null
-                            ? JsonSerializer.Deserialize<List<string>>(project.Technologies.ToString())
-                            : new List<string>();
-
                         projectDto = new ProjectDto
                         {
                             Id = project.Id,
@@ -47,7 +44,7 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                             Dates = project.Dates,
                             Active = project.Active,
                             Description = project.Description,
-                            Technologies = technologies,
+                            Technologies = project.Technologies,
                             Links = new List<ProjectLinkDto>(),
                             Image = project.Image,
                             Video = project.Video,
@@ -80,7 +77,9 @@ namespace PortfolioFullApp.Infrastructure.Repositories
         {
             using var connection = _context.CreateConnection();
             const string sql = @"
-                SELECT p.*, pl.*
+                SELECT p.Id, p.Title, p.Href, p.Dates, p.Active, p.Description, 
+                       CAST(p.Technologies as nvarchar(max)) as Technologies,
+                       p.Image, p.Video, p.[Order], pl.*
                 FROM Projects p
                 LEFT JOIN ProjectLinks pl ON p.Id = pl.ProjectId
                 WHERE p.Id = @Id";
@@ -93,10 +92,6 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                 {
                     if (!projectDict.TryGetValue(project.Id, out var projectDto))
                     {
-                        var technologies = project.Technologies != null
-                          ? JsonSerializer.Deserialize<List<string>>(project.Technologies.ToString())
-                          : new List<string>();
-
                         projectDto = new ProjectDto
                         {
                             Id = project.Id,
@@ -105,7 +100,7 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                             Dates = project.Dates,
                             Active = project.Active,
                             Description = project.Description,
-                            Technologies = technologies,
+                            Technologies = project.Technologies,
                             Links = new List<ProjectLinkDto>(),
                             Image = project.Image,
                             Video = project.Video,
@@ -141,12 +136,10 @@ namespace PortfolioFullApp.Infrastructure.Repositories
             {
                 try
                 {
-                    var technologiesJson = JsonSerializer.Serialize(project.Technologies.ToArray());
-
                     const string projectSql = @"
                     INSERT INTO Projects (Id, Title, Href, Dates, Active, Description, Technologies, Image, Video, [Order], CreatedAt)
                     OUTPUT INSERTED.Id 
-                    VALUES (NEWID(), @Title, @Href, @Dates, @Active, @Description, @TechnologiesJson, @Image, @Video, @Order, GETDATE())";
+                    VALUES (NEWID(), @Title, @Href, @Dates, @Active, @Description, @Technologies, @Image, @Video, @Order, GETDATE())";
 
                     var parameters = new
                     {
@@ -155,7 +148,7 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                         project.Dates,
                         project.Active,
                         project.Description,
-                        TechnologiesJson = technologiesJson,
+                        project.Technologies,
                         project.Image,
                         project.Video,
                         project.Order
@@ -183,7 +176,7 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                         Href = @Href,
                         Dates = @Dates,
                         Active = @Active,
-                            Description = @Description,
+                        Description = @Description,
                         Technologies = @Technologies,
                         Image = @Image,
                         Video = @Video,
@@ -191,7 +184,21 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                         UpdatedAt = GETDATE()
                     WHERE Id = @Id";
 
-                    await connection.ExecuteAsync(updateProjectSql, project);
+                    var parameters = new
+                    {
+                        project.Id,
+                        project.Title,
+                        project.Href,
+                        project.Dates,
+                        project.Active,
+                        project.Description,
+                        project.Technologies,
+                        project.Image,
+                        project.Video,
+                        project.Order
+                    };
+
+                    await connection.ExecuteAsync(updateProjectSql, parameters);
                     return await GetByIdAsync(project.Id);
                 }
                 catch (Exception ex)
@@ -208,7 +215,6 @@ namespace PortfolioFullApp.Infrastructure.Repositories
                 try
                 {
                     const string deleteLinksSql = "DELETE FROM ProjectLinks WHERE ProjectId = @Id";
-
                     await connection.ExecuteAsync(deleteLinksSql, new { Id = id });
 
                     const string deleteProjectSql = "DELETE FROM Projects WHERE Id = @Id";

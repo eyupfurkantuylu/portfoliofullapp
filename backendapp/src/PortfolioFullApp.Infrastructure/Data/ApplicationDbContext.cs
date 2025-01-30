@@ -48,14 +48,7 @@ namespace PortfolioFullApp.Infrastructure.Data
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
                     v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null));
 
-            modelBuilder.Entity<Project>()
-                .Property(p => p.Technologies)
-                .HasConversion(
-                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
-                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null));
-
             // İlişkileri güncelle - artık int yerine string Id kullanıyoruz
-
             modelBuilder.Entity<Project>()
                 .HasMany(p => p.Links)
                 .WithOne(l => l.Project)
